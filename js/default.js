@@ -1,122 +1,96 @@
-const canvas = document.getElementById("milkyway");
-const ctx = canvas.getContext("2d");
+// Initialisation de la scène
+const scene = new THREE.Scene();
+const container = document.getElementById("scene-container");
 
-let width, height;
-function resizeCanvas() {
-    width = canvas.width = window.innerWidth;
-    height = canvas.height = window.innerHeight;
+// Création de la caméra
+const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+camera.position.z = 2;
+
+// Création du rendu
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(container.clientWidth, container.clientHeight);
+container.appendChild(renderer.domElement);
+
+// Gestion du redimensionnement de la fenêtre
+function onWindowResize() {
+    camera.aspect = container.clientWidth / container.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(container.clientWidth, container.clientHeight);
 }
-window.addEventListener("resize", resizeCanvas);
-resizeCanvas();
+window.addEventListener('resize', onWindowResize);
 
+// Ajout des contrôles de la caméra (souris)
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+
+// Création de l'éclairage
+const light = new THREE.AmbientLight(0x404040, 5);
+scene.add(light);
+
+const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
+directionalLight.position.set(5, 3, 5);
+scene.add(directionalLight);
+
+// Chargement des textures
+const textureLoader = new THREE.TextureLoader();
+const earthTexture = textureLoader.load('images/jpg/earth.jpg');
+const cloudTexture = textureLoader.load('images/png/cloud.png');
+
+// Création de la sphère de la Terre
+const earthGeometry = new THREE.SphereGeometry(1, 64, 64);
+const earthMaterial = new THREE.MeshPhongMaterial({
+    map: earthTexture,
+    shininess: 5
+});
+const earth = new THREE.Mesh(earthGeometry, earthMaterial);
+scene.add(earth);
+
+// Création de la sphère des nuages
+const cloudGeometry = new THREE.SphereGeometry(1.003, 64, 64);
+const cloudMaterial = new THREE.MeshPhongMaterial({
+    map: cloudTexture,
+    transparent: true,
+    opacity: 0.8,
+    shininess: 5
+});
+const clouds = new THREE.Mesh(cloudGeometry, cloudMaterial);
+scene.add(clouds);
+
+// Création des étoiles
 const starCount = 5000;
-const stars = [];
-
-// Vitesse globale légèrement augmentée
-const globalSpeed = 0.0004; 
+const starGeometry = new THREE.BufferGeometry();
+const starVertices = [];
 
 for (let i = 0; i < starCount; i++) {
-    const distance = Math.random() * (Math.max(width, height) / 1.2);
-    const angle = Math.random() * Math.PI * 2;
-
-    let size, speed;
-    const rand = Math.random();
-
-    if (rand < 0.05) {
-        // 5% grosses étoiles → vitesse moitié encore
-        size = Math.random() * 0.8 + 0.2;
-        speed = globalSpeed / 2;
-    } else if (rand < 0.80) {
-        // 75% petites
-        size = Math.random() * 0.2 + 0.1;
-        speed = globalSpeed;
-    } else {
-        // 20% minuscules
-        size = Math.random() * 0.05 + 0.05;
-        speed = globalSpeed;
-    }
-
-    const colors = ["#ffffff", "#ffd27f", "#7fcfff", "#ff7f7f", "#b07fff"];
-    const color = colors[Math.floor(Math.random() * colors.length)];
-
-    stars.push({ distance, angle, size, color, speed });
+    const x = (Math.random() - 0.5) * 2000;
+    const y = (Math.random() - 0.5) * 2000;
+    const z = (Math.random() - 0.5) * 2000;
+    starVertices.push(x, y, z);
 }
 
-// Ajouter 3 étoiles spéciales
-for (let i = 0; i < 3; i++) {
-    const distance = Math.random() * (Math.max(width, height) / 1.2);
-    const angle = Math.random() * Math.PI * 2;
-    const size = (Math.random() * 0.8 + 0.2) * 2; // x2 par rapport aux grosses
-    const speed = globalSpeed / 4; // encore plus lent
+starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+const starMaterial = new THREE.PointsMaterial({
+    color: 0xffffff,
+    size: 2,
+    sizeAttenuation: false
+});
+const stars = new THREE.Points(starGeometry, starMaterial);
+scene.add(stars);
 
-    const colors = ["#ffffff", "#ffd27f", "#7fcfff", "#ff7f7f", "#b07fff"];
-    const color = colors[Math.floor(Math.random() * colors.length)];
+// Boucle d'animation
+function animate() {
+    requestAnimationFrame(animate);
 
-    stars.push({ distance, angle, size, color, speed });
+    // Rotation des sphères
+    earth.rotation.y += 0.001;
+    clouds.rotation.y += 0.0015;
+    
+    // Pas de rotation des étoiles, elles restent fixes dans l'espace
+
+    controls.update();
+    renderer.render(scene, camera);
 }
 
-// Charger l'image de la Terre
-const earthImg = new Image();
-earthImg.src = "images/png/terre.png";
-
-let earthAngle = 0;
-const earthRotationSpeed = 0.0001; // très lent
-const earthScale = 0.3; // réduire la taille de la Terre
-
-// Charger l'audio mais ne pas jouer encore
-const bgMusic = new Audio("audio/music.mp3");
-bgMusic.loop = true;
-bgMusic.volume = 0.5;
-
-// Déclencher la musique sur clic ou touche
-function startMusic() {
-    bgMusic.play().catch(e => {
-        console.log("Impossible de jouer la musique :", e);
-    });
-    window.removeEventListener("click", startMusic);
-    window.removeEventListener("keydown", startMusic);
-}
-window.addEventListener("click", startMusic);
-window.addEventListener("keydown", startMusic);
-
-function draw() {
-    ctx.clearRect(0, 0, width, height);
-
-    const centerX = width / 2;
-    const starCenterY = height / 2 + 400; // étoiles en bas
-    const earthCenterY = height / 2; // Terre au centre exact
-
-    // Dessiner les étoiles
-    stars.forEach(star => {
-        star.angle += star.speed;
-
-        const x = centerX + Math.cos(star.angle) * star.distance;
-        const y = starCenterY + Math.sin(star.angle) * star.distance;
-
-        ctx.beginPath();
-        ctx.arc(x, y, star.size, 0, Math.PI * 2);
-        ctx.fillStyle = star.color;
-        ctx.fill();
-    });
-
-    // Dessiner la Terre au centre avec taille réduite
-    if (earthImg.complete) {
-        ctx.save();
-        ctx.translate(centerX, earthCenterY);
-        ctx.rotate(earthAngle);
-        ctx.drawImage(
-            earthImg,
-            -earthImg.width / 2 * earthScale,
-            -earthImg.height / 2 * earthScale,
-            earthImg.width * earthScale,
-            earthImg.height * earthScale
-        );
-        ctx.restore();
-    }
-
-    earthAngle += earthRotationSpeed; // rotation lente
-
-    requestAnimationFrame(draw);
-}
-
-earthImg.onload = draw;
+// Lancement de l'animation
+animate();
