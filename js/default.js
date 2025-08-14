@@ -3,6 +3,12 @@ import { OrbitControls } from './jsm/controls/OrbitControls.js';
 import { EffectComposer } from './jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from './jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from './jsm/postprocessing/UnrealBloomPass.js';
+import { Pass } from './jsm/postprocessing/Pass.js';
+import { ShaderPass } from './jsm/postprocessing/ShaderPass.js';
+import { MaskPass } from './jsm/postprocessing/MaskPass.js';
+import { LuminosityHighPassShader } from './jsm/shaders/LuminosityHighPassShader.js';
+import { CopyShader } from './jsm/shaders/CopyShader.js';
+
 
 // Initialisation de la scène
 const scene = new THREE.Scene();
@@ -33,8 +39,8 @@ window.addEventListener('resize', onWindowResize);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
-controls.maxDistance = 5; // Empêche de trop s'éloigner
-controls.minDistance = 1.1; // Empêche de traverser la Terre
+controls.maxDistance = 5;
+controls.minDistance = 1.1;
 
 // Création de l'éclairage
 const ambientLight = new THREE.AmbientLight(0x404040, 5);
