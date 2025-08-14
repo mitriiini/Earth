@@ -1,6 +1,8 @@
+import * as THREE from 'three';
 import { EffectComposer } from './jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from './jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from './jsm/postprocessing/UnrealBloomPass.js';
+import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/controls/OrbitControls.js';
 
 // Initialisation de la scène
 const scene = new THREE.Scene();
@@ -28,7 +30,7 @@ function onWindowResize() {
 window.addEventListener('resize', onWindowResize);
 
 // Ajout des contrôles de la caméra (souris)
-const controls = new THREE.OrbitControls(camera, renderer.domElement);
+const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 controls.maxDistance = 5; // Empêche de trop s'éloigner
@@ -130,8 +132,8 @@ function animate() {
 
     if (intersects.length > 0) {
         tooltip.style.display = 'block';
-        tooltip.style.left = `${intersects[0].point.x * 50 + container.clientWidth / 2}px`;
-        tooltip.style.top = `${-intersects[0].point.y * 50 + container.clientHeight / 2}px`;
+        tooltip.style.left = `${event.clientX}px`;
+        tooltip.style.top = `${event.clientY}px`;
     } else {
         tooltip.style.display = 'none';
     }
